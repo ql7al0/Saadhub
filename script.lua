@@ -30,7 +30,7 @@ uiTitle.TextSize = 60; uiTitle.Font = "SourceSansBold"; uiTitle.BackgroundTransp
 
 local btnAuto = Instance.new("TextButton", blackBg)
 btnAuto.Size = UDim2.new(0, 300, 0, 100); btnAuto.Position = UDim2.new(0.5, -320, 0.5, 0)
-btnAuto.Text = "النسخة المتطورة\n(V2 Advanced)"; btnAuto.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+btnAuto.Text = "سكربت يعطي ل اقرب لاعب"; btnAuto.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 btnAuto.TextColor3 = Color3.new(1, 1, 1); btnAuto.TextSize = 25; btnAuto.ZIndex = 100005
 Instance.new("UICorner", btnAuto)
 
