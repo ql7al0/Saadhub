@@ -66,7 +66,7 @@ makeDraggable(toggle)
 
 toggle.MouseButton1Click:Connect(function()
     active = not active
-    toggle.Text = active and "ON" or "OFF"
+    toggle.Text = active and "saad" or "OFF"
     toggle.BackgroundColor3 = active and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(40, 40, 40)
 end)
 
