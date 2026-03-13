@@ -1,3 +1,25 @@
+local player = game.Players.LocalPlayer
+local sg = Instance.new("ScreenGui", player.PlayerGui)
+local frame = Instance.new("Frame", sg)
+
+-- تصميم اللوحة
+frame.Size = UDim2.new(0, 300, 0, 100)
+frame.Position = UDim2.new(0.5, -150, 0.1, 0) -- تطلع فوق في النص
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Instance.new("UICorner", frame)
+
+-- نص التحديث
+local txt = Instance.new("TextLabel", frame)
+txt.Size = UDim2.new(1, 0, 1, 0)
+txt.Text = "🚀 SAADHUB UPDATED!\nتم تحديث ميزة الالتصاق"
+txt.TextColor3 = Color3.new(1, 1, 1)
+txt.BackgroundTransparency = 1
+txt.TextSize = 18
+txt.Font = Enum.Font.GothamBold
+
+-- تختفي اللوحة بعد 5 ثواني تلقائياً
+task.wait(5)
+frame:Destroy()
 -- [[ SAADHUB EDITION - PRESTIGE VERSION ]] --
 
 local player = game.Players.LocalPlayer
