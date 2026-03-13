@@ -20,6 +20,7 @@ txt.Font = Enum.Font.GothamBold
 -- تختفي اللوحة بعد 5 ثواني تلقائياً
 task.wait(5)
 frame:Destroy()
+
 -- [[ SAADHUB EDITION - PRESTIGE VERSION ]] --
 
 local player = game.Players.LocalPlayer
