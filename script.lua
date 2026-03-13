@@ -1,6 +1,6 @@
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "تم تحديث السكربت!"; -- العنوان
-    Text = "SaadHub: تم إضافة ميزات TVON الجديدة"; -- الكلام اللي تبيه يطلع
+    Text = "تم تحديث سكربت الجديدة"; -- الكلام اللي تبيه يطلع
     Duration = 5; -- كم ثانية يبقى الإشعار
 })
 
