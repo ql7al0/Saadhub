@@ -5,8 +5,27 @@ local httpService = game:GetService("HttpService")
 local tweenService = game:GetService("TweenService")
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
+local starterGui = game:GetService("StarterGui")
 
--- 1. واجهة المقدمة السوداء (المطورة)
+-- [ نظام الذاكرة لمرة واحدة - One Time Notify ] --
+if shared.SaadHubGlobalNotified == nil then 
+    shared.SaadHubGlobalNotified = false 
+end
+
+local function sendOfficialNotify()
+    if shared.SaadHubGlobalNotified == false then
+        shared.SaadHubGlobalNotified = true -- نغير الحالة عشان ما يظهر مرة ثانية
+        pcall(function()
+            starterGui:SetCore("SendNotification", {
+                Title = "SAADHUB UPDATED! ✅";
+                Text = "تم تحديث السكربت وتم تضبيط الأمان أعلى (سرعة 16)";
+                Duration = 5;
+            })
+        end)
+    end
+end
+
+-- 1. واجهة المقدمة السوداء (المطورة مع خط التحميل)
 local introGui = Instance.new("ScreenGui", player.PlayerGui)
 introGui.Name = "SaadHub_Intro_System"
 introGui.IgnoreGuiInset = true
@@ -38,6 +57,32 @@ subTitle.Font = Enum.Font.Code
 subTitle.BackgroundTransparency = 1
 subTitle.ZIndex = 2
 
+-- [ خط التحميل - Loading Bar ] --
+local loadingBackground = Instance.new("Frame", blackFrame)
+loadingBackground.Size = UDim2.new(0, 300, 0, 5) -- عرض الخط
+loadingBackground.Position = UDim2.new(0.5, -150, 0.65, 0) -- مكانه تحت النص
+loadingBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40) -- لون الخلفية رمادي غامق
+loadingBackground.BorderSizePixel = 0
+loadingBackground.ZIndex = 2
+Instance.new("UICorner", loadingBackground).CornerRadius = UDim.new(1, 0) -- حواف دائرية
+
+local loadingBar = Instance.new("Frame", loadingBackground)
+loadingBar.Size = UDim2.new(0, 0, 1, 0) -- يبدأ من صفر
+loadingBar.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- لون التحميل أحمر
+loadingBar.BorderSizePixel = 0
+loadingBar.ZIndex = 3
+Instance.new("UICorner", loadingBar).CornerRadius = UDim.new(1, 0) -- حواف دائرية
+
+local loadingText = Instance.new("TextLabel", blackFrame)
+loadingText.Size = UDim2.new(0, 100, 0, 20)
+loadingText.Position = UDim2.new(0.5, -50, 0.68, 0)
+loadingText.Text = "Downloading..."
+loadingText.TextColor3 = Color3.new(1, 1, 1)
+loadingText.TextSize = 12
+loadingText.Font = Enum.Font.GothamMedium
+loadingText.BackgroundTransparency = 1
+loadingText.ZIndex = 2
+
 -- منطقة الأونر والعداد الأبيض (تحت يسار)
 local bottomContainer = Instance.new("Frame", blackFrame)
 bottomContainer.Size = UDim2.new(0, 400, 0, 50)
@@ -54,18 +99,11 @@ ownerLabel.Font = Enum.Font.GothamBold
 ownerLabel.BackgroundTransparency = 1
 ownerLabel.ZIndex = 3
 
-local onlineDot = Instance.new("Frame", bottomContainer)
-onlineDot.Size = UDim2.new(0, 10, 0, 10)
-onlineDot.Position = UDim2.new(0, 195, 0.35, 0)
-onlineDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-onlineDot.ZIndex = 3
-Instance.new("UICorner", onlineDot).CornerRadius = UDim.new(1, 0)
-
 local liveUsersLabel = Instance.new("TextLabel", bottomContainer)
 liveUsersLabel.Size = UDim2.new(0, 100, 1, 0)
 liveUsersLabel.Position = UDim2.new(0, 210, 0, 0)
 liveUsersLabel.Text = "1" 
-liveUsersLabel.TextColor3 = Color3.new(1, 1, 1) -- الرقم بالأبيض
+liveUsersLabel.TextColor3 = Color3.new(1, 1, 1)
 liveUsersLabel.TextSize = 16
 liveUsersLabel.Font = Enum.Font.GothamBold
 liveUsersLabel.BackgroundTransparency = 1
@@ -81,9 +119,21 @@ task.spawn(function()
     end)
 end)
 
--- أنيميشن اختفاء المقدمة
+-- أنيميشن اختفاء المقدمة + أنيميشن خط التحميل
 task.spawn(function()
-    task.wait(4)
+    -- أنيميشن خط التحميل يمتلئ خلال 4 ثواني
+    local tweenInfo = TweenInfo.new(4, Enum.EasingStyle.Linear) -- 4 ثواني، حركة خطية
+    local loadingTween = tweenService:Create(loadingBar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+    loadingTween:Play()
+    
+    -- نغير النص تدريجياً
+    task.delay(1.5, function() loadingText.Text = "Verifying..." end)
+    task.delay(3, function() loadingText.Text = "Complete!" end)
+    
+    -- ننتظر حتى ينتهي التحميل تماماً (4 ثواني)
+    loadingTween.Completed:Wait()
+    
+    -- أنيميشن اختفاء الشاشة السوداء والنصوص
     local fade = tweenService:Create(blackFrame, TweenInfo.new(1.2), {BackgroundTransparency = 1})
     for _, v in pairs(blackFrame:GetDescendants()) do
         if v:IsA("TextLabel") then tweenService:Create(v, TweenInfo.new(0.8), {TextTransparency = 1}):Play() end
@@ -92,6 +142,9 @@ task.spawn(function()
     fade:Play()
     fade.Completed:Wait()
     introGui:Destroy()
+    
+    -- استدعاء الإشعار الرسمي (مرة واحدة فقط)
+    sendOfficialNotify()
 end)
 
 --- [ 2. واجهة السكربت الفعلي - SAADHUB ELITE ] ---
@@ -167,9 +220,10 @@ runService.RenderStepped:Connect(function()
                 local targetRoot = targetChar.HumanoidRootPart
                 local distance = (targetRoot.Position - root.Position).Magnitude
                 
-                hum.WalkSpeed = 22 -- سرعة مطاردة ممتازة
+                -- تم تعديل السرعة إلى 16 للحماية القصوى من البند
+                hum.WalkSpeed = 16 
                 
-                if distance > 1.5 then
+                if distance > 1.0 then
                     local direction = (targetRoot.Position - root.Position).Unit
                     hum:Move(direction, false) 
                 else
@@ -178,6 +232,9 @@ runService.RenderStepped:Connect(function()
             else
                 hum:Move(Vector3.new(0,0,0), false)
             end
+        else
+            -- إعادة السرعة للطبيعي في حال عدم حمل الأداة
+            hum.WalkSpeed = 16
         end
     end
 end)
