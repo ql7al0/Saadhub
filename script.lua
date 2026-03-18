@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (GREEN SENSE) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -7,7 +7,17 @@ local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local starterGui = game:GetService("StarterGui")
 
--- [[ نظام الحفظ للأبد - للإشعار الأول فقط ]] --
+-- [[ نظام الحفظ للإشعار الجديد - يظهر مرة واحدة للأبد ]] --
+local updateFileName = "SaadHub_TeamCheck_Notify.json"
+local function shouldNotifyUpdate()
+    local success, content = pcall(function() return readfile(updateFileName) end)
+    if success and content == "done" then return false end
+    pcall(function() writefile(updateFileName, "done") end)
+    return true
+end
+local isFirstUpdateNotify = shouldNotifyUpdate()
+
+-- [[ نظام الحفظ الأصلي للإشعار الأول ]] --
 local fileName = "SaadHub_Global_Check.json"
 local function shouldNotify()
     local success, content = pcall(function() return readfile(fileName) end)
@@ -65,7 +75,7 @@ local liveUsers = Instance.new("TextLabel", blackFrame)
 liveUsers.Size = UDim2.new(1, 0, 0, 20); liveUsers.Position = UDim2.new(0, 0, 0.93, 0)
 liveUsers.Text = "LIVE USERS: " .. liveCount; liveUsers.TextColor3 = Color3.new(1, 1, 1); liveUsers.TextSize = 17; liveUsers.Font = Enum.Font.GothamBold; liveUsers.BackgroundTransparency = 1
 
--- [[ 3. تشغيل الأنيميشن والإشعارات المؤقتة ]] --
+-- [[ 3. تشغيل الأنيميشن والإشعارات ]] --
 task.spawn(function()
     local t = tweenService:Create(loadBar, TweenInfo.new(4), {Size = UDim2.new(1, 0, 1, 0)})
     t:Play(); t.Completed:Wait()
@@ -74,38 +84,56 @@ task.spawn(function()
     for _, v in pairs(blackFrame:GetDescendants()) do pcall(function() if v:IsA("TextLabel") or v:IsA("Frame") or v:IsA("ImageLabel") then tweenService:Create(v, TweenInfo.new(0.8), {Transparency = 1}):Play() end end) end
     fade:Play(); fade.Completed:Wait(); introGui:Destroy()
     
-    -- الإشعار الأول (التحديث) - يظهر مرة واحدة للأبد
-    if isFirstTime then
+    -- الإشعار الجديد يظهر هنا بعد المقدمة (مرة واحدة فقط للأبد)
+    if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
             Title = "SAADHUB UPDATED! ✅",
-            Text = "تم تحديث الالتصاق وإضافة حماية",
+            Text = "تم إضافة فحص الفريق التلقائي (الأخضر)",
             Icon = "rbxassetid://13054812323",
-            Duration = 5
+            Duration = 6
         })
     end
-    
-    -- الإشعار الثاني (التواصل) - يظهر بعد 5 دقائق (300 ثانية)
+
+    if isFirstTime then
+        starterGui:SetCore("SendNotification", {Title = "SAADHUB UPDATED! ✅", Text = "تم تحديث الالتصاق وإضافة حماية", Icon = "rbxassetid://13054812323", Duration = 5})
+    end
     task.wait(300)
-    starterGui:SetCore("SendNotification", {
-        Title = "SAADHUB SUPPORT 💬",
-        Text = "للبلاغ والاستفسار tik:saadhub6",
-        Duration = 10
-    })
+    starterGui:SetCore("SendNotification", {Title = "SAADHUB SUPPORT 💬", Text = "للبلاغ والاستفسار tik:saadhub6", Duration = 10})
 end)
 
--- [[ 4. واجهة التحكم القابلة للسحب (SAADHUB: ON) ]] --
+-- [[ 4. واجهة التحكم القابلة للسحب ]] --
 local mainGui = Instance.new("ScreenGui", player.PlayerGui); mainGui.ResetOnSpawn = false
 local toggle = Instance.new("TextButton", mainGui)
 toggle.Size = UDim2.new(0, 140, 0, 45); toggle.Position = UDim2.new(0.05, 0, 0.4, 0); toggle.Text = "SAADHUB: ON"
 toggle.BackgroundColor3 = Color3.fromRGB(170, 0, 0); toggle.TextColor3 = Color3.new(1, 1, 1); toggle.Font = Enum.Font.GothamBold; toggle.TextSize = 16; Instance.new("UICorner", toggle)
 Instance.new("UIStroke", toggle).Color = Color3.new(1, 1, 1)
 
-local dragging, dragInput, dragStart, startPos
+local dragging, dragStart, startPos
 toggle.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true; dragStart = input.Position; startPos = toggle.Position end end)
 userInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart; toggle.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
 toggle.InputEnded:Connect(function() dragging = false end)
 
--- [[ 5. منطق الالتصاق "اللحم" (Sticky Lock) ]] --
+-- [[ 5. منطق فحص التوهج الأخضر (Highlight Check) ]] --
+local function isEnemy(v)
+    if not v or v == player or not v.Character then return false end
+    
+    local hl = v.Character:FindFirstChildOfClass("Highlight")
+    if hl then
+        local c = hl.FillColor
+        if c.G > c.R and c.G > c.B then return false end
+    end
+    
+    local colorName = tostring(v.TeamColor):lower()
+    if colorName:find("green") or colorName:find("lime") then return false end
+    
+    if player.Team ~= nil and v.Team ~= nil then
+        if player.Team == v.Team then return false end
+    end
+    
+    return true 
+end
+
+-- [[ 6. منطق الالتصاق "اللحم" ]] --
 local active = true
 local lockedTarget = nil
 
@@ -119,18 +147,16 @@ runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
         player.Character.Humanoid.WalkSpeed = 16
         if player.Character:FindFirstChildOfClass("Tool") then
-            -- تثبيت الهدف
-            if not lockedTarget or not lockedTarget.Parent or not lockedTarget:FindFirstChild("Humanoid") or lockedTarget.Humanoid.Health <= 0 then
-                local cDist = math.huge
-                lockedTarget = nil
+            local targetPlr = lockedTarget and game.Players:GetPlayerFromCharacter(lockedTarget)
+            if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 or (targetPlr and not isEnemy(targetPlr)) then
+                local cDist = math.huge; lockedTarget = nil
                 for _, v in pairs(game.Players:GetPlayers()) do
-                    if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
+                    if isEnemy(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
                         local d = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
                         if d < cDist then cDist = d; lockedTarget = v.Character end
                     end
                 end
             end
-            -- الالتصاق التام (مسافة 0.5)
             if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
                 local dist = (lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
                 if dist > 0.5 then
