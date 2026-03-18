@@ -55,7 +55,7 @@ downLabel.Text = "Downloading..."; downLabel.TextColor3 = Color3.new(0.8, 0.8, 0
 -- نصوص الأسفل (الأونر والعداد)
 local ownerInfo = Instance.new("TextLabel", blackFrame)
 ownerInfo.Size = UDim2.new(1, 0, 0, 20); ownerInfo.Position = UDim2.new(0, 0, 0.88, 0)
-ownerInfo.Text = "OWNER: 🇸🇦 tik:ql.z45"; ownerInfo.TextColor3 = Color3.fromRGB(180, 180, 180); ownerInfo.TextSize = 15; ownerInfo.Font = Enum.Font.GothamBold; ownerInfo.BackgroundTransparency = 1
+ownerInfo.Text = "OWNER: 🇸🇦 tik:S"; ownerInfo.TextColor3 = Color3.fromRGB(180, 180, 180); ownerInfo.TextSize = 15; ownerInfo.Font = Enum.Font.GothamBold; ownerInfo.BackgroundTransparency = 1
 
 local liveUsers = Instance.new("TextLabel", blackFrame)
 liveUsers.Size = UDim2.new(1, 0, 0, 20); liveUsers.Position = UDim2.new(0, 0, 0.93, 0)
