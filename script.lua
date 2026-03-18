@@ -159,7 +159,7 @@ runService.RenderStepped:Connect(function()
             end
             if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
                 local dist = (lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if dist > 0.5 then
+                if dist > 1.5 then
                     player.Character.Humanoid:Move((lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Unit, false) 
                 end
             end
