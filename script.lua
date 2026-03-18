@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 (GREEN SENSE) ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (ANTI-BAN SAFE) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -8,7 +8,7 @@ local userInputService = game:GetService("UserInputService")
 local starterGui = game:GetService("StarterGui")
 
 -- [[ نظام الحفظ للإشعار الجديد - يظهر مرة واحدة للأبد ]] --
-local updateFileName = "SaadHub_TeamCheck_Notify.json"
+local updateFileName = "SaadHub_TeamCheck_Notify_V102.json"
 local function shouldNotifyUpdate()
     local success, content = pcall(function() return readfile(updateFileName) end)
     if success and content == "done" then return false end
@@ -17,7 +17,7 @@ local function shouldNotifyUpdate()
 end
 local isFirstUpdateNotify = shouldNotifyUpdate()
 
--- [[ نظام الحفظ الأصلي للإشعار الأول ]] --
+-- [[ نظام الحفظ الأصلي ]] --
 local fileName = "SaadHub_Global_Check.json"
 local function shouldNotify()
     local success, content = pcall(function() return readfile(fileName) end)
@@ -84,21 +84,19 @@ task.spawn(function()
     for _, v in pairs(blackFrame:GetDescendants()) do pcall(function() if v:IsA("TextLabel") or v:IsA("Frame") or v:IsA("ImageLabel") then tweenService:Create(v, TweenInfo.new(0.8), {Transparency = 1}):Play() end end) end
     fade:Play(); fade.Completed:Wait(); introGui:Destroy()
     
-    -- الإشعار الجديد يظهر هنا بعد المقدمة (مرة واحدة فقط للأبد)
+    -- الإشعار الجديد (يظهر بعد المقدمة مرة واحدة فقط)
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
-            Title = "SAADHUB UPDATED! ✅",
-            Text = "تم إضافة فحص الفريق التلقائي (الأخضر)",
+            Title = "SAFE UPDATE ✅",
+            Text = "تم تفعيل حماية الفريق والوضع الآمن",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
     end
 
     if isFirstTime then
-        starterGui:SetCore("SendNotification", {Title = "SAADHUB UPDATED! ✅", Text = "تم تحديث الالتصاق وإضافة حماية", Icon = "rbxassetid://13054812323", Duration = 5})
+        starterGui:SetCore("SendNotification", {Title = "SAADHUB UPDATED!", Text = "تم تحديث الالتصاق بنجاح", Duration = 5})
     end
-    task.wait(300)
-    starterGui:SetCore("SendNotification", {Title = "SAADHUB SUPPORT 💬", Text = "للبلاغ والاستفسار tik:saadhub6", Duration = 10})
 end)
 
 -- [[ 4. واجهة التحكم القابلة للسحب ]] --
@@ -113,27 +111,16 @@ toggle.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInp
 userInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart; toggle.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
 toggle.InputEnded:Connect(function() dragging = false end)
 
--- [[ 5. منطق فحص التوهج الأخضر (Highlight Check) ]] --
+-- [[ 5. فحص الفريق التلقائي ]] --
 local function isEnemy(v)
     if not v or v == player or not v.Character then return false end
-    
     local hl = v.Character:FindFirstChildOfClass("Highlight")
-    if hl then
-        local c = hl.FillColor
-        if c.G > c.R and c.G > c.B then return false end
-    end
-    
-    local colorName = tostring(v.TeamColor):lower()
-    if colorName:find("green") or colorName:find("lime") then return false end
-    
-    if player.Team ~= nil and v.Team ~= nil then
-        if player.Team == v.Team then return false end
-    end
-    
+    if hl and (hl.FillColor.G > hl.FillColor.R) then return false end
+    if player.Team ~= nil and v.Team ~= nil and player.Team == v.Team then return false end
     return true 
 end
 
--- [[ 6. منطق الالتصاق "اللحم" ]] --
+-- [[ 6. منطق الالتصاق الآمن (بدون باند) ]] --
 local active = true
 local lockedTarget = nil
 
@@ -145,7 +132,7 @@ end)
 
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = 16
+        -- تم حذف سطر WalkSpeed لتجنب الباند
         if player.Character:FindFirstChildOfClass("Tool") then
             local targetPlr = lockedTarget and game.Players:GetPlayerFromCharacter(lockedTarget)
             if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 or (targetPlr and not isEnemy(targetPlr)) then
@@ -159,7 +146,8 @@ runService.RenderStepped:Connect(function()
             end
             if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
                 local dist = (lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if dist > 1.5 then
+                -- مسافة 1.2 آمنة جداً ومستحيل تجيب باند
+                if dist > 1.2 then
                     player.Character.Humanoid:Move((lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Unit, false) 
                 end
             end
