@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 (ANTI-BAN SAFE) ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (ANTI-BAN + SMART JITTER) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -8,7 +8,7 @@ local userInputService = game:GetService("UserInputService")
 local starterGui = game:GetService("StarterGui")
 
 -- [[ نظام الحفظ للإشعار الجديد - يظهر مرة واحدة للأبد ]] --
-local updateFileName = "SaadHub_TeamCheck_Notify_V102.json"
+local updateFileName = "SaadHub_Safe_V102_Jitter.json"
 local function shouldNotifyUpdate()
     local success, content = pcall(function() return readfile(updateFileName) end)
     if success and content == "done" then return false end
@@ -84,18 +84,14 @@ task.spawn(function()
     for _, v in pairs(blackFrame:GetDescendants()) do pcall(function() if v:IsA("TextLabel") or v:IsA("Frame") or v:IsA("ImageLabel") then tweenService:Create(v, TweenInfo.new(0.8), {Transparency = 1}):Play() end end) end
     fade:Play(); fade.Completed:Wait(); introGui:Destroy()
     
-    -- الإشعار الجديد (يظهر بعد المقدمة مرة واحدة فقط)
+    -- الإشعار الجديد
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
-            Title = "SAFE UPDATE ✅",
-            Text = "تم تفعيل حماية الفريق والوضع الآمن",
+            Title = "JITTER MODE ACTIVE 🛡️",
+            Text = "تم تفعيل نظام المراوغة الذكي للأمان!",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
-    end
-
-    if isFirstTime then
-        starterGui:SetCore("SendNotification", {Title = "SAADHUB UPDATED!", Text = "تم تحديث الالتصاق بنجاح", Duration = 5})
     end
 end)
 
@@ -111,7 +107,7 @@ toggle.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInp
 userInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then local delta = input.Position - dragStart; toggle.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
 toggle.InputEnded:Connect(function() dragging = false end)
 
--- [[ 5. فحص الفريق التلقائي ]] --
+-- [[ 5. فحص الفريق ]] --
 local function isEnemy(v)
     if not v or v == player or not v.Character then return false end
     local hl = v.Character:FindFirstChildOfClass("Highlight")
@@ -120,7 +116,7 @@ local function isEnemy(v)
     return true 
 end
 
--- [[ 6. منطق الالتصاق الآمن (بدون باند) ]] --
+-- [[ 6. منطق الالتصاق الذكي (المراوغ) ]] --
 local active = true
 local lockedTarget = nil
 
@@ -132,7 +128,6 @@ end)
 
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
-        -- تم حذف سطر WalkSpeed لتجنب الباند
         if player.Character:FindFirstChildOfClass("Tool") then
             local targetPlr = lockedTarget and game.Players:GetPlayerFromCharacter(lockedTarget)
             if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 or (targetPlr and not isEnemy(targetPlr)) then
@@ -144,11 +139,18 @@ runService.RenderStepped:Connect(function()
                     end
                 end
             end
+            
             if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
-                local dist = (lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                -- مسافة 1.2 آمنة جداً ومستحيل تجيب باند
-                if dist > 1.2 then
-                    player.Character.Humanoid:Move((lockedTarget.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Unit, false) 
+                local targetRoot = lockedTarget.HumanoidRootPart
+                local myRoot = player.Character.HumanoidRootPart
+                local dist = (targetRoot.Position - myRoot.Position).Magnitude
+                
+                -- [[ ميزة التذبذب الذكي ]] --
+                -- يختار مسافة عشوائية بسيطة في كل لحظة عشان يخدع الحماية
+                local smartOffset = math.random(12, 16) / 10 -- يتراوح بين 1.2 و 1.6
+                
+                if dist > smartOffset then
+                    player.Character.Humanoid:Move((targetRoot.Position - myRoot.Position).Unit, false) 
                 end
             end
         else lockedTarget = nil end
