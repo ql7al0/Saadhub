@@ -87,8 +87,8 @@ task.spawn(function()
     -- الإشعار الجديد
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
-            Title = "JITTER MODE ACTIVE 🛡️",
-            Text = "تم تفعيل نظام المراوغة الذكي للأمان!",
+            Title = "SHIELD ACTIVE 🛡️",
+            Text = "تم تفعيل السرعة القصوى مع الحماية!",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
@@ -116,9 +116,27 @@ local function isEnemy(v)
     return true 
 end
 
--- [[ 6. منطق الالتصاق الذكي (المراوغ) ]] --
+-- [[ 6. منطق الالتصاق واللمس السريع ]] --
 local active = true
 local lockedTarget = nil
+
+-- وظيفة اللمس السريع جداً (Magnetic Touch)
+local function fastTouch(targetChar, tool)
+    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildOfClass("Part")
+    if handle and targetChar:FindFirstChild("HumanoidRootPart") then
+        local dist = (player.Character.HumanoidRootPart.Position - targetChar.HumanoidRootPart.Position).Magnitude
+        -- مسافة الأمان 3.8 متر لضمان عدم الباند
+        if dist < 3.8 then
+            task.spawn(function()
+                -- إرسال أوامر لمس مكثفة لضمان انتقال القنبلة فوراً (حل مشكلة الفيديو)
+                for i = 1, 15 do
+                    firetouchinterest(targetChar.HumanoidRootPart, handle, 0)
+                    firetouchinterest(targetChar.HumanoidRootPart, handle, 1)
+                end
+            end)
+        end
+    end
+end
 
 toggle.MouseButton1Click:Connect(function()
     active = not active; toggle.Text = active and "SAADHUB: ON" or "SAADHUB: OFF"
@@ -128,7 +146,12 @@ end)
 
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
-        if player.Character:FindFirstChildOfClass("Tool") then
+        -- الإمساك التلقائي للقنبلة (ضروري للسرعة)
+        local bpTool = player.Backpack:FindFirstChildOfClass("Tool")
+        if bpTool then player.Character.Humanoid:EquipTool(bpTool) end
+
+        local tool = player.Character:FindFirstChildOfClass("Tool")
+        if tool then
             local targetPlr = lockedTarget and game.Players:GetPlayerFromCharacter(lockedTarget)
             if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 or (targetPlr and not isEnemy(targetPlr)) then
                 local cDist = math.huge; lockedTarget = nil
@@ -146,12 +169,14 @@ runService.RenderStepped:Connect(function()
                 local dist = (targetRoot.Position - myRoot.Position).Magnitude
                 
                 -- [[ ميزة التذبذب الذكي ]] --
-                -- يختار مسافة عشوائية بسيطة في كل لحظة عشان يخدع الحماية
-                local smartOffset = math.random(12, 16) / 10 -- يتراوح بين 1.2 و 1.6
+                local smartOffset = math.random(11, 14) / 10 -- تم تقليل المسافة قليلاً للالتصاق أكثر
                 
                 if dist > smartOffset then
                     player.Character.Humanoid:Move((targetRoot.Position - myRoot.Position).Unit, false) 
                 end
+
+                -- تفعيل اللمس السريع لحل مشكلة التأخير
+                fastTouch(lockedTarget, tool)
             end
         else lockedTarget = nil end
     end
