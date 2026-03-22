@@ -1,11 +1,43 @@
--- [[ SAADHUB OFFICIAL - V102 (20 PULSE + CIRCLE DRAG) ]] --
+-- [[ SAADHUB OFFICIAL - V102 (SAFE & ONE-TIME NOTIFY) ]] --
 
 local player = game.Players.LocalPlayer
 local tweenService = game:GetService("TweenService")
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
+local starterGui = game:GetService("StarterGui")
 
--- [[ 1. واجهة المقدمة (تصميمك الأصلي بالملي) ]] --
+-- [[ 1. نظام الذاكرة (إشعار لمرة واحدة فقط بالعمر) ]] --
+local function runSaadNotifications()
+    local fileName = "SaadHub_Memory_V102.txt"
+    local alreadySeen = false
+    
+    pcall(function()
+        if isfile and isfile(fileName) then
+            alreadySeen = true
+        end
+    end)
+
+    if not alreadySeen then
+        task.wait(4) -- تطلع بعد المقدمة
+        starterGui:SetCore("SendNotification", {
+            Title = "SAADHUB UPDATE",
+            Text = "تم تحديث السكربت بنجاح",
+            Duration = 4
+        })
+        task.wait(1)
+        starterGui:SetCore("SendNotification", {
+            Title = "SECURITY",
+            Text = "تم إضافة نظام حماية ضد الباند",
+            Duration = 4
+        })
+        
+        pcall(function()
+            if writefile then writefile(fileName, "true") end
+        end)
+    end
+end
+
+-- [[ 2. واجهة المقدمة (تصميمك الأصلي بالملي) ]] --
 local introGui = Instance.new("ScreenGui", player.PlayerGui)
 introGui.Name = "SaadHub_Intro"; introGui.IgnoreGuiInset = true; introGui.DisplayOrder = 999
 local blackFrame = Instance.new("Frame", introGui)
@@ -36,9 +68,10 @@ task.spawn(function()
     local fade = tweenService:Create(blackFrame, TweenInfo.new(1), {BackgroundTransparency = 1})
     for _, v in pairs(blackFrame:GetDescendants()) do pcall(function() tweenService:Create(v, TweenInfo.new(0.8), {ImageTransparency = 1, TextTransparency = 1, BackgroundTransparency = 1}):Play() end) end
     fade:Play(); fade.Completed:Wait(); introGui:Destroy()
+    runSaadNotifications() -- تشغيل نظام الإشعارات لمرة واحدة
 end)
 
--- [[ 2. واجهة التحكم (السحب محصور في الدائرة فقط) ]] --
+-- [[ 3. واجهة التحكم (السحب محصور في الدائرة فقط) ]] --
 local mainGui = Instance.new("ScreenGui", player.PlayerGui); mainGui.ResetOnSpawn = false
 local toggle = Instance.new("TextButton", mainGui)
 toggle.Size = UDim2.new(0, 140, 0, 45); toggle.Position = UDim2.new(0.05, 0, 0.4, 0)
@@ -65,19 +98,21 @@ userInputService.InputChanged:Connect(function(input)
 end)
 userInputService.InputEnded:Connect(function() dragging = false end)
 
--- [[ 3. منطق الالتصاق واللمس (20 نبضة) ]] --
+-- [[ 4. منطق الالتصاق واللمس المحمي (10 نبضات + أقرب شخص) ]] --
 local active = true
-local lockedTarget = nil
 
 local function isEnemy(v)
     if not v or v == player or not v.Character then return false end
     if player.Team ~= nil and v.Team ~= nil and player.Team == v.Team then return false end
-    return true 
+    return v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0
 end
 
 toggle.MouseButton1Click:Connect(function()
     active = not active; toggle.Text = active and "SAADHUB: ON" or "SAADHUB: OFF"
     toggle.BackgroundColor3 = active and Color3.fromRGB(170, 0, 0) or Color3.fromRGB(40, 40, 40)
+    if not active and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid:Move(Vector3.new(0,0,0), false) -- يوقف الحركة فوراً
+    end
 end)
 
 runService.RenderStepped:Connect(function()
@@ -85,23 +120,37 @@ runService.RenderStepped:Connect(function()
         local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
         if tool then
             if tool.Parent == player.Backpack then player.Character.Humanoid:EquipTool(tool) end
-            if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 then
-                local cDist = math.huge; lockedTarget = nil
-                for _, v in pairs(game.Players:GetPlayers()) do
-                    if isEnemy(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                        local d = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
-                        if d < cDist then cDist = d; lockedTarget = v.Character end
-                    end
+            
+            -- البحث دايماً عن أقرب شخص (زي ما طلبت)
+            local closestTarget = nil
+            local cDist = math.huge
+            for _, v in pairs(game.Players:GetPlayers()) do
+                if isEnemy(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                    local d = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                    if d < cDist then cDist = d; closestTarget = v.Character end
                 end
             end
-            if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
-                local tRoot = lockedTarget.HumanoidRootPart
+            
+            if closestTarget and closestTarget:FindFirstChild("HumanoidRootPart") then
+                local tRoot = closestTarget.HumanoidRootPart
                 local dist = (tRoot.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if dist > 1.2 then player.Character.Humanoid:Move((tRoot.Position - player.Character.HumanoidRootPart.Position).Unit, false) end
+                
+                -- ملاحقة
+                if dist > 1.6 then 
+                    player.Character.Humanoid:Move((tRoot.Position - player.Character.HumanoidRootPart.Position).Unit, false) 
+                end
+                
                 local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildOfClass("Part")
                 if handle and dist < 4 then
-                    -- تم التعديل لـ 20 نبضة كما طلبت
-                    for i = 1, 20 do firetouchinterest(tRoot, handle, 0); firetouchinterest(tRoot, handle, 1) end
+                    -- 10 نبضات مع حماية (توقف فوراً لو طفيت الزر)
+                    task.spawn(function()
+                        for i = 1, 10 do 
+                            if not active then break end
+                            firetouchinterest(tRoot, handle, 0)
+                            firetouchinterest(tRoot, handle, 1)
+                            task.wait(0.01) -- حماية ضد الباند
+                        end
+                    end)
                 end
             end
         end
