@@ -26,7 +26,7 @@ ToggleButton.TextSize = 20
 
 
 local isSpeedEnabled = false
-local speedMultiplier = 1.3 -- نسبة الزيادة الخفيفة (1.3)
+local speedMultiplier = 1.5 -- نسبة الزيادة (1.5)
 
 -- دالة التفعيل والإيقاف (نفس كودك بالضبط بس مجمع عشان يشتغل مع الزر وحرف E)
 local function ToggleSpeedLogic()
