@@ -1,55 +1,169 @@
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: CLICK TO TOGGLE + 2.5-3.5 JITTER + DESYNC) ]] --
 
--- إنشاء الواجهة (GUI)
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("TextButton")
+local player = game.Players.LocalPlayer
+local httpService = game:GetService("HttpService")
+local tweenService = game:GetService("TweenService")
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+local starterGui = game:GetService("StarterGui")
 
--- حماية الواجهة لتجنب الرصد السهل
-ScreenGui.Parent = game.CoreGui 
-ScreenGui.Name = "AutoKillUI"
+-- [[ نظام الحفظ للإشعار الجديد ]] --
+local updateFileName = "SaadHub_Safe_V102_Jitter.json"
+local function shouldNotifyUpdate()
+    local success, content = pcall(function() return readfile(updateFileName) end)
+    if success and content == "done" then return false end
+    pcall(function() writefile(updateFileName, "done") end)
+    return true
+end
+local isFirstUpdateNotify = shouldNotifyUpdate()
 
--- تصميم الزر
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0, 150, 0, 50)
-ToggleButton.Position = UDim2.new(0, 50, 0, 50)
-ToggleButton.Text = "تشغيل القتل"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.TextSize = 20
+-- [[ نظام الحفظ الأصلي ]] --
+local fileName = "SaadHub_Global_Check.json"
+local function shouldNotify()
+    local success, content = pcall(function() return readfile(fileName) end)
+    if success and content == "done" then return false end
+    pcall(function() writefile(fileName, "done") end)
+    return true
+end
+local isFirstTime = shouldNotify()
 
-local isToggled = false
+-- [[ 1. نظام العداد (Live Users) ]] --
+local liveCount = "1"
+task.spawn(function()
+    pcall(function() 
+        local response = game:HttpGet("https://api.counterapi.dev/v1/saadhub_official_unique/hits/up")
+        local data = httpService:JSONDecode(response)
+        if data and data.count then liveCount = tostring(data.count) end
+    end)
+end)
 
--- وظيفة استهداف الفريق الخصم
-local function targetOpponents()
-    for _, player in ipairs(Players:GetPlayers()) do
-        -- التحقق من أن اللاعب ليس أنت، وأنه في فريق مختلف
-        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team then
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                -- محاولة تصفير الصحة أو تدمير الهيومانويد
-                player.Character.Humanoid.Health = 0
-            end
+-- [[ إرسال الإشعار ]] --
+task.spawn(function()
+    if isFirstUpdateNotify then
+        starterGui:SetCore("SendNotification", {
+            Title = "SHIELD ACTIVE 🛡️",
+            Text = "تم تفعيل السرعة القصوى مع إخفاء المنظور للخصم!",
+            Icon = "rbxassetid://13054812323",
+            Duration = 6
+        })
+    end
+end)
+
+-- [[ 4. واجهة التحكم ]] --
+local mainGui = Instance.new("ScreenGui", player.PlayerGui); mainGui.ResetOnSpawn = false
+local toggle = Instance.new("TextButton", mainGui)
+toggle.Size = UDim2.new(0, 140, 0, 45); toggle.Position = UDim2.new(0.05, 0, 0.4, 0); toggle.Text = "SAADHUB: ON"
+toggle.BackgroundColor3 = Color3.fromRGB(170, 0, 0); toggle.TextColor3 = Color3.new(1, 1, 1); toggle.Font = Enum.Font.GothamBold; toggle.TextSize = 16; Instance.new("UICorner", toggle)
+Instance.new("UIStroke", toggle).Color = Color3.new(1, 1, 1)
+
+local dragCircle = Instance.new("Frame", toggle)
+dragCircle.Size = UDim2.new(0, 25, 0, 25); dragCircle.Position = UDim2.new(0.5, -12.5, 0, -32)
+dragCircle.BackgroundTransparency = 1; Instance.new("UICorner", dragCircle).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", dragCircle).Transparency = 1
+
+local dragging, dragStart, startPos
+dragCircle.InputBegan:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+        dragging = true; dragStart = input.Position; startPos = toggle.Position 
+    end 
+end)
+userInputService.InputChanged:Connect(function(input) 
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then 
+        local delta = input.Position - dragStart; 
+        toggle.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) 
+    end 
+end)
+userInputService.InputEnded:Connect(function() dragging = false end)
+
+-- [[ 5. فحص الفريق ]] --
+local function isEnemy(v)
+    if not v or v == player or not v.Character then return false end
+    local hl = v.Character:FindFirstChildOfClass("Highlight")
+    if hl and (hl.FillColor.G > hl.FillColor.R) then return false end
+    if player.Team ~= nil and v.Team ~= nil and player.Team == v.Team then return false end
+    return true 
+end
+
+-- [[ 6. منطق الالتصاق واللمس السريع ]] --
+local active = true
+local lockedTarget = nil
+
+local function fastTouch(targetChar, tool)
+    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildOfClass("Part")
+    if handle and targetChar:FindFirstChild("HumanoidRootPart") then
+        local dist = (player.Character.HumanoidRootPart.Position - targetChar.HumanoidRootPart.Position).Magnitude
+        if dist < 3.8 then
+            task.spawn(function()
+                for i = 1, 15 do
+                    firetouchinterest(targetChar.HumanoidRootPart, handle, 0)
+                    firetouchinterest(targetChar.HumanoidRootPart, handle, 1)
+                end
+            end)
         end
     end
 end
 
--- برمجة زر التشغيل والإيقاف
-ToggleButton.MouseButton1Click:Connect(function()
-    isToggled = not isToggled
-    if isToggled then
-        ToggleButton.Text = "إيقاف القتل"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    else
-        ToggleButton.Text = "تشغيل القتل"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+-- [[ وظيفة التغيير ]] --
+local function toggleScript()
+    active = not active
+    toggle.Text = active and "SAADHUB: ON" or "SAADHUB: OFF"
+    toggle.BackgroundColor3 = active and Color3.fromRGB(170, 0, 0) or Color3.fromRGB(40, 40, 40)
+    if not active then lockedTarget = nil end
+end
+
+-- تفعيل/إيقاف عن طريق كليك الماوس اليسار
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleScript()
     end
 end)
 
--- تكرار العملية باستمرار إذا كان الزر مفعل
-RunService.RenderStepped:Connect(function()
-    if isToggled then
-        targetOpponents()
+-- الزر اليدوي أيضاً يعمل
+toggle.MouseButton1Click:Connect(toggleScript)
+
+-- [[ المنطق الأساسي للحركة الثابتة من منظورك ]] --
+runService.RenderStepped:Connect(function()
+    if active and player.Character and player.Character:FindFirstChild("Humanoid") then
+        local bpTool = player.Backpack:FindFirstChildOfClass("Tool")
+        if bpTool then player.Character.Humanoid:EquipTool(bpTool) end
+
+        local tool = player.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            local targetPlr = lockedTarget and game.Players:GetPlayerFromCharacter(lockedTarget)
+            if not lockedTarget or not lockedTarget.Parent or lockedTarget.Humanoid.Health <= 0 or (targetPlr and not isEnemy(targetPlr)) then
+                local cDist = math.huge; lockedTarget = nil
+                for _, v in pairs(game.Players:GetPlayers()) do
+                    if isEnemy(v) and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
+                        local d = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                        if d < cDist then cDist = d; lockedTarget = v.Character end
+                    end
+                end
+            end
+            
+            if lockedTarget and lockedTarget:FindFirstChild("HumanoidRootPart") then
+                local targetRoot = lockedTarget.HumanoidRootPart
+                local myRoot = player.Character.HumanoidRootPart
+                local dist = (targetRoot.Position - myRoot.Position).Magnitude
+                
+                -- [[ ميزة التذبذب الذكي المطلوبة: بين 2.5 و 3.5 ]] --
+                local smartOffset = math.random(25, 35) / 10 
+                
+                if dist > smartOffset then
+                    player.Character.Humanoid:Move((targetRoot.Position - myRoot.Position).Unit, false) 
+                end
+
+                fastTouch(lockedTarget, tool)
+            end
+        else lockedTarget = nil end
+    end
+end)
+
+-- [[ نظام التلاعب بمنظور السيرفر والخصم (Desync/Lag Simulation) ]] --
+-- هذه الإضافة تتلاعب بالـ Velocity وتحديثات الشبكة بحيث تظهر للخصم كأنك تتحرك بتأخير (Legit) وبدون اهتزاز الأوتو المريب
+runService.Heartbeat:Connect(function()
+    if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
+        local myRoot = player.Character.HumanoidRootPart
+        -- إرسال سرعة وهمية منخفضة أو متأخرة للسيرفر لجعل الحركة تبدو طبيعية وسلسة عند الخصم
+        myRoot.Velocity = myRoot.Velocity * 0.2 + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2))
     end
 end)
