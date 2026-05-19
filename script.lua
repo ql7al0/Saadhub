@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: RANDOM STRAFE DE-SYNC + 2.5-3.5 JITTER) ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: NATURAL MOVEMENT + 2.5-3.5 JITTER) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -42,7 +42,7 @@ task.spawn(function()
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
             Title = "SHIELD ACTIVE 🛡️",
-            Text = "تم تفعيل المراوغة الوهمية (يمين ويسار) للخصم!",
+            Text = "تم تفعيل السرعة القصوى مع الحماية!",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
@@ -121,25 +121,6 @@ end)
 -- الزر اليدوي أيضاً يعمل
 toggle.MouseButton1Click:Connect(toggleScript)
 
--- [[ نظام تزييف المنظور: حركة يمين ويسار عشوائية طبيعية للخصم (Strafe Jitter) ]] --
-local fakeLagTick = 0
-runService.Heartbeat:Connect(function()
-    if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
-        fakeLagTick = fakeLagTick + 1
-        -- نطبق الدفعة الوهمية كل فريمين عشان تكون الحركة سلسة وطبيعية للخصم مو كأنها لاق يقطع
-        if fakeLagTick % 2 == 0 then
-            local myRoot = player.Character.HumanoidRootPart
-            -- نأخذ محور اليمين واليسار الخاص بلاعبك
-            local rightVector = myRoot.CFrame.RightVector
-            -- نولد سرعة جانبية عشوائية (مرة يمين ومرة يسار بقيم مختلفة)
-            local randomStrafe = math.random(-35, 35)
-            
-            -- السيرفر راح يشوف لاعبك يميل يمين ويسار، بس شاشتك بتظل مستقيمة للخصم بسبب الـ RenderStepped
-            myRoot.Velocity = myRoot.Velocity + (rightVector * randomStrafe)
-        end
-    end
-end)
-
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
         local bpTool = player.Backpack:FindFirstChildOfClass("Tool")
@@ -167,7 +148,20 @@ runService.RenderStepped:Connect(function()
                 local smartOffset = math.random(25, 35) / 10 
                 
                 if dist > smartOffset then
-                    player.Character.Humanoid:Move((targetRoot.Position - myRoot.Position).Unit, false) 
+                    -- الاتجاه الأساسي نحو الخصم
+                    local forwardDir = (targetRoot.Position - myRoot.Position).Unit
+                    
+                    -- استخراج اتجاه جانبي (يمين/يسار) لعمل المراوغة
+                    local rightVector = forwardDir:Cross(Vector3.new(0, 1, 0))
+                    
+                    -- استخدام دالة الجيب (sin) لصنع حركة زقزاق طبيعية تتغير مع الوقت
+                    -- الرقم 4 يتحكم بسرعة الزقزاق، والرقم 0.7 يتحكم بمدى وسع الحركة يمين ويسار
+                    local strafeAmount = math.sin(tick() * 4) * 0.7 
+                    
+                    -- دمج الاتجاه الأساسي مع الاتجاه الجانبي لإنتاج حركة طبيعية
+                    local naturalMoveDir = (forwardDir + (rightVector * strafeAmount)).Unit
+                    
+                    player.Character.Humanoid:Move(naturalMoveDir, false) 
                 end
 
                 fastTouch(lockedTarget, tool)
