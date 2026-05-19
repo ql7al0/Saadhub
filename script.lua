@@ -121,7 +121,7 @@ end)
 -- الزر اليدوي أيضاً يعمل
 toggle.MouseButton1Click:Connect(toggleScript)
 
--- [[ المنطق الأساسي للحركة الثابتة من منظورك ]] --
+-- [[ المنطق الأساسي للحركة الثابتة من منظورك (Client-Side) ]] --
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
         local bpTool = player.Backpack:FindFirstChildOfClass("Tool")
@@ -158,12 +158,17 @@ runService.RenderStepped:Connect(function()
     end
 end)
 
--- [[ نظام التلاعب بمنظور السيرفر والخصم (Desync/Lag Simulation) ]] --
--- هذه الإضافة تتلاعب بالـ Velocity وتحديثات الشبكة بحيث تظهر للخصم كأنك تتحرك بتأخير (Legit) وبدون اهتزاز الأوتو المريب
+-- [[ نظام التلاعب بمنظور السيرفر والخصم (Desync / Server Fake Lag) ]] --
 runService.Heartbeat:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
         local myRoot = player.Character.HumanoidRootPart
-        -- إرسال سرعة وهمية منخفضة أو متأخرة للسيرفر لجعل الحركة تبدو طبيعية وسلسة عند الخصم
-        myRoot.Velocity = myRoot.Velocity * 0.2 + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2))
+        
+        -- إرسال سرعة وهمية (Velocity) للسيرفر لجعل الحركة تبدو متأخرة أو تلاج عند الخصم
+        -- هذا الكود يخدع نظام التنبؤ الحركي (Interpolation) في روبلوكس عند اللاعبين الثانيين
+        myRoot.Velocity = Vector3.new(
+            myRoot.Velocity.X * 0.1 + math.random(-8, 8),
+            myRoot.Velocity.Y,
+            myRoot.Velocity.Z * 0.1 + math.random(-8, 8)
+        )
     end
 end)
