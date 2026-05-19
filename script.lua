@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: BYPASS ENEMY VIEW + JITTER) ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: RANDOM STRAFE DE-SYNC + 2.5-3.5 JITTER) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -42,7 +42,7 @@ task.spawn(function()
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
             Title = "SHIELD ACTIVE 🛡️",
-            Text = "تم تفعيل حماية وتأخير المنظور للخصم!",
+            Text = "تم تفعيل المراوغة الوهمية (يمين ويسار) للخصم!",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
@@ -121,16 +121,21 @@ end)
 -- الزر اليدوي أيضاً يعمل
 toggle.MouseButton1Click:Connect(toggleScript)
 
--- [[ نظام تزييف وتأخير المنظور للسيرفر والخصم ]] --
+-- [[ نظام تزييف المنظور: حركة يمين ويسار عشوائية طبيعية للخصم (Strafe Jitter) ]] --
 local fakeLagTick = 0
 runService.Heartbeat:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
         fakeLagTick = fakeLagTick + 1
-        -- نقوم بقطع تزامن الشبكة وإرسال الإحداثيات كل فريمين بشكل متذبذب ليظهر متأخراً وضبابياً عند الخصم
+        -- نطبق الدفعة الوهمية كل فريمين عشان تكون الحركة سلسة وطبيعية للخصم مو كأنها لاق يقطع
         if fakeLagTick % 2 == 0 then
             local myRoot = player.Character.HumanoidRootPart
-            -- يتم إيهام السيرفر أن حركتك طبيعية ومتأخرة للخلف بمقدار بسيط جداً، بينما من منظورك أنت ملتصق تماماً
-            myRoot.Velocity = myRoot.Velocity + Vector3.new(math.random(-2,2), 0, math.random(-2,2))
+            -- نأخذ محور اليمين واليسار الخاص بلاعبك
+            local rightVector = myRoot.CFrame.RightVector
+            -- نولد سرعة جانبية عشوائية (مرة يمين ومرة يسار بقيم مختلفة)
+            local randomStrafe = math.random(-35, 35)
+            
+            -- السيرفر راح يشوف لاعبك يميل يمين ويسار، بس شاشتك بتظل مستقيمة للخصم بسبب الـ RenderStepped
+            myRoot.Velocity = myRoot.Velocity + (rightVector * randomStrafe)
         end
     end
 end)
