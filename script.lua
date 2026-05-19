@@ -1,4 +1,4 @@
--- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: CLICK TO TOGGLE + 2.5-3.5 JITTER + DESYNC) ]] --
+-- [[ SAADHUB OFFICIAL - FULL VERSION V102 (MODIFIED: BYPASS ENEMY VIEW + JITTER) ]] --
 
 local player = game.Players.LocalPlayer
 local httpService = game:GetService("HttpService")
@@ -42,7 +42,7 @@ task.spawn(function()
     if isFirstUpdateNotify then
         starterGui:SetCore("SendNotification", {
             Title = "SHIELD ACTIVE 🛡️",
-            Text = "تم تفعيل السرعة القصوى مع إخفاء المنظور للخصم!",
+            Text = "تم تفعيل حماية وتأخير المنظور للخصم!",
             Icon = "rbxassetid://13054812323",
             Duration = 6
         })
@@ -121,7 +121,20 @@ end)
 -- الزر اليدوي أيضاً يعمل
 toggle.MouseButton1Click:Connect(toggleScript)
 
--- [[ المنطق الأساسي للحركة الثابتة من منظورك (Client-Side) ]] --
+-- [[ نظام تزييف وتأخير المنظور للسيرفر والخصم ]] --
+local fakeLagTick = 0
+runService.Heartbeat:Connect(function()
+    if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
+        fakeLagTick = fakeLagTick + 1
+        -- نقوم بقطع تزامن الشبكة وإرسال الإحداثيات كل فريمين بشكل متذبذب ليظهر متأخراً وضبابياً عند الخصم
+        if fakeLagTick % 2 == 0 then
+            local myRoot = player.Character.HumanoidRootPart
+            -- يتم إيهام السيرفر أن حركتك طبيعية ومتأخرة للخلف بمقدار بسيط جداً، بينما من منظورك أنت ملتصق تماماً
+            myRoot.Velocity = myRoot.Velocity + Vector3.new(math.random(-2,2), 0, math.random(-2,2))
+        end
+    end
+end)
+
 runService.RenderStepped:Connect(function()
     if active and player.Character and player.Character:FindFirstChild("Humanoid") then
         local bpTool = player.Backpack:FindFirstChildOfClass("Tool")
@@ -155,20 +168,5 @@ runService.RenderStepped:Connect(function()
                 fastTouch(lockedTarget, tool)
             end
         else lockedTarget = nil end
-    end
-end)
-
--- [[ نظام التلاعب بمنظور السيرفر والخصم (Desync / Server Fake Lag) ]] --
-runService.Heartbeat:Connect(function()
-    if active and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lockedTarget then
-        local myRoot = player.Character.HumanoidRootPart
-        
-        -- إرسال سرعة وهمية (Velocity) للسيرفر لجعل الحركة تبدو متأخرة أو تلاج عند الخصم
-        -- هذا الكود يخدع نظام التنبؤ الحركي (Interpolation) في روبلوكس عند اللاعبين الثانيين
-        myRoot.Velocity = Vector3.new(
-            myRoot.Velocity.X * 0.1 + math.random(-8, 8),
-            myRoot.Velocity.Y,
-            myRoot.Velocity.Z * 0.1 + math.random(-8, 8)
-        )
     end
 end)
