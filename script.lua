@@ -1,68 +1,55 @@
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
--- ==========================================
--- إضافة واجهة الزر بالشاشة
--- ==========================================
+-- إنشاء الواجهة (GUI)
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleButton = Instance.new("TextButton")
 
--- حماية الواجهة من المسح (تعمل على برامج التشغيل)
-local guiParent = game:GetService("CoreGui") or player:WaitForChild("PlayerGui")
-ScreenGui.Parent = guiParent
-ScreenGui.Name = "SpeedToggleGui"
+-- حماية الواجهة لتجنب الرصد السهل
+ScreenGui.Parent = game.CoreGui 
+ScreenGui.Name = "AutoKillUI"
 
--- إعدادات وتصميم الزر
+-- تصميم الزر
 ToggleButton.Parent = ScreenGui
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- أحمر (معطل)
-ToggleButton.Position = UDim2.new(0.5, -75, 0.05, 0) -- موقعه أعلى الشاشة في المنتصف
-ToggleButton.Size = UDim2.new(0, 150, 0, 45)
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Text = "السرعة: متوقفة"
+ToggleButton.Size = UDim2.new(0, 150, 0, 50)
+ToggleButton.Position = UDim2.new(0, 50, 0, 50)
+ToggleButton.Text = "تشغيل القتل"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.TextSize = 20
--- ==========================================
 
+local isToggled = false
 
-local isSpeedEnabled = false
-local speedMultiplier = 1.05 -- نسبة الزيادة الخفيفة جداً (1.05)
-
--- دالة التفعيل والإيقاف (نفس كودك بالضبط بس مجمع عشان يشتغل مع الزر وحرف E)
-local function ToggleSpeedLogic()
-    isSpeedEnabled = not isSpeedEnabled
-    local character = player.Character
-    
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            if isSpeedEnabled then
-                -- تفعيل السرعة الجديدة
-                humanoid.WalkSpeed = humanoid.WalkSpeed * speedMultiplier
-                -- تحديث شكل الزر
-                ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50) -- أخضر (مفعل)
-                ToggleButton.Text = "السرعة: مفعلة"
-            else
-                -- الرجوع للسرعة الطبيعية
-                humanoid.WalkSpeed = humanoid.WalkSpeed / speedMultiplier
-                -- تحديث شكل الزر
-                ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- أحمر (معطل)
-                ToggleButton.Text = "السرعة: متوقفة"
+-- وظيفة استهداف الفريق الخصم
+local function targetOpponents()
+    for _, player in ipairs(Players:GetPlayers()) do
+        -- التحقق من أن اللاعب ليس أنت، وأنه في فريق مختلف
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team then
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                -- محاولة تصفير الصحة أو تدمير الهيومانويد
+                player.Character.Humanoid.Health = 0
             end
         end
     end
 end
 
--- ربط ضغطة الماوس على الزر بالدالة
-ToggleButton.MouseButton1Click:Connect(ToggleSpeedLogic)
+-- برمجة زر التشغيل والإيقاف
+ToggleButton.MouseButton1Click:Connect(function()
+    isToggled = not isToggled
+    if isToggled then
+        ToggleButton.Text = "إيقاف القتل"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        ToggleButton.Text = "تشغيل القتل"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end)
 
--- سكربتك الأصلي لربط حرف E
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    -- تجاهل الزر إذا كنت تكتب في الشات عشان ما يشتغل بالغلط
-    if gameProcessed then return end 
-
-    -- التأكد من الضغط على حرف E
-    if input.KeyCode == Enum.KeyCode.E then
-        ToggleSpeedLogic()
+-- تكرار العملية باستمرار إذا كان الزر مفعل
+RunService.RenderStepped:Connect(function()
+    if isToggled then
+        targetOpponents()
     end
 end)
