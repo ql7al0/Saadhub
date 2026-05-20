@@ -148,20 +148,8 @@ runService.RenderStepped:Connect(function()
                 local smartOffset = math.random(25, 35) / 10 
                 
                 if dist > smartOffset then
-                    -- الاتجاه الأساسي نحو الخصم
-                    local forwardDir = (targetRoot.Position - myRoot.Position).Unit
-                    
-                    -- استخراج اتجاه جانبي (يمين/يسار) لعمل المراوغة
-                    local rightVector = forwardDir:Cross(Vector3.new(0, 1, 0))
-                    
-                    -- استخدام دالة الجيب (sin) لصنع حركة زقزاق طبيعية تتغير مع الوقت
-                    -- الرقم 4 يتحكم بسرعة الزقزاق، والرقم 0.7 يتحكم بمدى وسع الحركة يمين ويسار
-                    local strafeAmount = math.sin(tick() * 4) * 0.7 
-                    
-                    -- دمج الاتجاه الأساسي مع الاتجاه الجانبي لإنتاج حركة طبيعية
-                    local naturalMoveDir = (forwardDir + (rightVector * strafeAmount)).Unit
-                    
-                    player.Character.Humanoid:Move(naturalMoveDir, false) 
+                    -- تم استبدال حركة الزقزاق بحركة التوجيه المباشر المستقيمة تماماً مثل السكربت الثاني
+                    player.Character.Humanoid:Move((targetRoot.Position - myRoot.Position).Unit, false) 
                 end
 
                 fastTouch(lockedTarget, tool)
