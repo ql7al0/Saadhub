@@ -103,3 +103,14 @@ RunService.Heartbeat:Connect(function()
         end
     end
 end)
+
+-- [[ 5. إضافة اختصار الكيبورد (زر 0) ]] --
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    -- gameProcessed يمنع تفعيل السكربت إذا كنت تكتب في الشات
+    if not gameProcessed then
+        -- التحقق مما إذا كان الزر المضغوط هو 0
+        if input.KeyCode == Enum.KeyCode.Zero then
+            toggleScript() -- استدعاء نفس الدالة المسؤولة عن التشغيل والإيقاف
+        end
+    end
+end)
