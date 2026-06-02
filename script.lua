@@ -90,8 +90,8 @@ RunService.Heartbeat:Connect(function()
     if humanoid and humanoid.Health > 0 then
         local bombTime = getBombTime()
         
-        -- إذا وصل وقت القنبلة إلى 2
-        if bombTime == 2 then
+        -- إذا وصل وقت القنبلة إلى 3
+        if bombTime == 3 then
             if humanoid.WalkSpeed ~= targetSpeed then
                 humanoid.WalkSpeed = targetSpeed
             end
